@@ -1,0 +1,28 @@
+{
+  "name": "idapps-angular-page-title",
+  "authors": [
+    "Yann Lojewski <yann.lojewski@id-apps.fr>"
+  ],
+  "description": "",
+  "main": "dist/page-title.js",
+  "moduleType": [
+    "es6",
+    "globals"
+  ],
+  "license": "MIT",
+  "homepage": "https://gitlab.id-apps.info/interne-idapps-angular/page-title",
+  "private": true,
+  "dependencies": {
+    "angular": ">=1.4.8",
+    "angular-ui-router": "ui-router#^0.3.1"
+  },
+  "_release": "1.1",
+  "_resolution": {
+    "type": "tag",
+    "tag": "1.1",
+    "commit": "0a3e47e3674b5fb82a068057c09de9e29b164176"
+  },
+  "_source": "git@gitlab.id-apps.info:interne-idapps-angular/page-title.git",
+  "_target": "1.1",
+  "_originalSource": "git@gitlab.id-apps.info:interne-idapps-angular/page-title.git"
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html ng-app="toastCancel">
+    <head>
+        <meta charset="utf-8">
+        <!--
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Vendors CSS
+        -->
+        <link rel="stylesheet" href="vendors/angular-material/angular-material.css">
+        <!--
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Components CSS
+        -->
+    </head>
+    <body ng-controller="ToastCancelController">
+        <p><button ng-click="do()">toast</button></p>
+        <p>State : [{{state}}]</p>
+        <!--
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Vendors JS
+        -->
+        <script src="vendors/angular/angular.js"></script>
+        <script src="vendors/angular-animate/angular-animate.js"></script>
+        <script src="vendors/angular-aria/angular-aria.js"></script>
+        <script src="vendors/angular-material/angular-material.js"></script>
+        <script src="vendors/angular-messages/angular-messages.js"></script>
+        <!--
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Components JS
+        -->
+        <script src="components/toastCancel/toastCancel.js"></script>
+        <script src="dist/toast-cancel.js"></script>
+    </body>
+</html>
