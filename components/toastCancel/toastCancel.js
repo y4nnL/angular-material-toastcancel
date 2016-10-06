@@ -27,6 +27,18 @@ configToastCancel.$inject = [
 function configToastCancel(toastCancelProvider) {
     toastCancelProvider.useToastModule('angular-material');
     toastCancelProvider.useTranslateFilter('translate');
+    toastCancelProvider.defaultConfiguration({
+        i18n      : 'toastCancel.toasts.test',
+        translate : true,
+        position  : 'top right',
+        delay     : 6000,
+        doCatch   : {
+            class : 'error'
+        },
+        undoCatch : {
+            class : 'error'
+        }
+    });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,18 +85,8 @@ function ToastCancelController($scope, $timeout, $q, toastCancel) {
      */
     $scope.do = function () {
         toastCancel({
-            do        : doHandler,
-            undo      : undoHandler,
-            i18n      : 'toastCancel.toasts.test',
-            translate : true,
-            position  : 'top right',
-            delay     : 6000,
-            doCatch   : {
-                class : 'error'
-            },
-            undoCatch : {
-                class : 'error'
-            }
+            do   : doHandler,
+            undo : undoHandler
         }).do();
     };
 

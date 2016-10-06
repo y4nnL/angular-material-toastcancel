@@ -19,8 +19,8 @@
      *     i18n      : string?,
      *     position  : string?,
      *     class     : string?,
-     *     translate : boolean,
      *     delay     : number,
+     *     translate : boolean,
      *     doThen    : Toast?,
      *     doCatch   : Toast?,
      *     undoThen  : Toast?,
@@ -70,7 +70,7 @@
         ];
         /**
          * Angular provider $get implementation
-         * @returns {function(Configuration):Promise}
+         * @returns {function(Configuration):{do : function:Promise, undo : function:Promise}}
          */
         function $get($injector, $q, $filter) {
             /**
@@ -79,11 +79,17 @@
              */
             var dummyPromise = $q.when(null);
 
+            /**
+             * Angular filter to translate toasts
+             * @type {function(string):string}
+             */
+            var translateFilter = usedTranslateFilter ? $filter(usedTranslateFilter) : angular.identity;
+
             switch (usedToastModule) {
                 case 'angular-material' :
 
-                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    // Service : toastService
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // Service for angular material
 
                     return function (configuration) {
                         var fullConfiguration = makeConfiguration(dummyPromise, configuration);
@@ -92,12 +98,6 @@
                          * Angular material toast service
                          */
                         var $mdToast = $injector.get('$mdToast');
-
-                        /**
-                         * Angular filter to translate toasts
-                         * @type {function(string):string}
-                         */
-                        var translateFilter = $filter(usedTranslateFilter);
 
                         /*
                          * Toasts to show
@@ -201,6 +201,14 @@
         toastCancelProvider.$get = $get;
 
         /**
+         * Set default configuration options
+         * @param {Configuration} configuration
+         */
+        toastCancelProvider.defaultConfiguration = function (configuration) {
+            angular.extend(makeConfiguration.defaults, configuration);
+        };
+
+        /**
          * Set the toast module to use
          * @param {string} toastModule
          */
@@ -222,6 +230,40 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Private
 
+    makeConfiguration.defaults = {
+        i18n      : '',
+        position  : '',
+        class     : '',
+        delay     : 0,
+        doThen    : {
+            text     : '',
+            action   : '',
+            position : '',
+            class    : '',
+            delay    : 0
+        },
+        doCatch   : {
+            text     : '',
+            action   : '',
+            position : '',
+            class    : '',
+            delay    : 0
+        },
+        undoThen  : {
+            text     : '',
+            action   : '',
+            position : '',
+            class    : '',
+            delay    : 0
+        },
+        undoCatch : {
+            text     : '',
+            action   : '',
+            position : '',
+            class    : '',
+            delay    : 0
+        }
+    };
     /**
      * Set all the configuration options to their defaults
      * @param {Promise} promise
@@ -230,41 +272,9 @@
      */
     function makeConfiguration(promise, configuration) {
         var madeConfiguration = angular.extend({
-            do        : angular.identity(promise),
-            undo      : angular.identity(promise),
-            i18n      : '',
-            position  : '',
-            class     : '',
-            delay     : 0,
-            doThen    : {
-                text     : '',
-                action   : '',
-                position : '',
-                class    : '',
-                delay    : 0
-            },
-            doCatch   : {
-                text     : '',
-                action   : '',
-                position : '',
-                class    : '',
-                delay    : 0
-            },
-            undoThen  : {
-                text     : '',
-                action   : '',
-                position : '',
-                class    : '',
-                delay    : 0
-            },
-            undoCatch : {
-                text     : '',
-                action   : '',
-                position : '',
-                class    : '',
-                delay    : 0
-            }
-        }, configuration);
+            do   : angular.identity(promise),
+            undo : angular.identity(promise)
+        }, makeConfiguration.defaults, configuration);
 
         if (madeConfiguration.i18n) {
             madeConfiguration.doThen.text      = madeConfiguration.i18n + '.doThenText';
