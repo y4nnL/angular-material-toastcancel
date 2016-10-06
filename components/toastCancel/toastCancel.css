@@ -1,0 +1,7 @@
+body {
+    overflow : hidden;
+}
+
+md-toast.md-error-theme .md-toast-content {
+    background : #910000;
+}

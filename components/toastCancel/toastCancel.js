@@ -8,22 +8,52 @@ var moduleDeps = [
     'ngAria',
     'ngMaterial',
     'ngMessages',
+    'pascalprecht.translate',
     // Components
     'idappsToastCancel'
 ];
 
 angular.module(moduleName, moduleDeps)
     .config(configToastCancel)
+    .config(configTranslate)
     .controller('ToastCancelController', ToastCancelController);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Config : configToastCancel
+// Config : ToastCancel
 
 configToastCancel.$inject = [
     'toastCancelProvider'
 ];
 function configToastCancel(toastCancelProvider) {
     toastCancelProvider.useToastModule('angular-material');
+    toastCancelProvider.useTranslateFilter('translate');
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Config : Translate
+
+configTranslate.$inject = [
+    '$translateProvider'
+];
+function configTranslate($translateProvider) {
+    $translateProvider.preferredLanguage('en');
+    $translateProvider.useSanitizeValueStrategy();
+    $translateProvider.translations('en', {
+        toastCancel : {
+            toasts : {
+                test : {
+                    doThenText      : 'DO success',
+                    doThenAction    : 'Cancel',
+                    doCatchText     : 'DO error',
+                    doCatchAction   : 'Redo',
+                    undoThenText    : 'UNDO success',
+                    undoThenAction  : 'Cancel',
+                    undoCatchText   : 'UNDO error',
+                    undoCatchAction : 'Redo'
+                }
+            }
+        }
+    });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,17 +73,19 @@ function ToastCancelController($scope, $timeout, $q, toastCancel) {
      */
     $scope.do = function () {
         toastCancel({
-            do   : {
-                handler : doHandler,
-                then    : {text : 'DO : Success!', action : 'cancel DO'},
-                catch   : {text : 'DO : Error!', action : 'redo DO'}
+            do        : doHandler,
+            undo      : undoHandler,
+            i18n      : 'toastCancel.toasts.test',
+            translate : true,
+            position  : 'top right',
+            delay     : 6000,
+            doCatch   : {
+                class : 'error'
             },
-            undo : {
-                handler : undoHandler,
-                then    : {text : 'UNDO : Success!', action : 'cancel UNDO'},
-                catch   : {text : 'UNDO : Error!', action : 'redo UNDO'}
+            undoCatch : {
+                class : 'error'
             }
-        });
+        }).do();
     };
 
     /**
@@ -73,7 +105,7 @@ function ToastCancelController($scope, $timeout, $q, toastCancel) {
             } else {
                 defer.reject();
             }
-        }, 1000);
+        }, 500);
         return defer.promise;
     }
 
@@ -87,7 +119,7 @@ function ToastCancelController($scope, $timeout, $q, toastCancel) {
             } else {
                 defer.reject();
             }
-        }, 1000);
+        }, 500);
         return defer.promise;
     }
 }

@@ -14,16 +14,17 @@
 
     /**
      * @typedef {{
-     *     do : {
-     *         handler : function():Promise,
-     *         then    : Toast,
-     *         catch   : Toast
-     *     },
-     *     undo : {
-     *         handler : function():Promise,
-     *         then    : Toast,
-     *         catch   : Toast
-     *     }
+     *     do        : function():Promise,
+     *     undo      : function():Promise,
+     *     i18n      : string?,
+     *     position  : string?,
+     *     class     : string?,
+     *     translate : boolean,
+     *     delay     : number,
+     *     doThen    : Toast?,
+     *     doCatch   : Toast?,
+     *     undoThen  : Toast?,
+     *     undoCatch : Toast?
      * }}
      */
     var Configuration;
@@ -36,7 +37,8 @@
      *     text     : string,
      *     action   : string?,
      *     position : string?,
-     *     theme    : string?
+     *     class    : string?,
+     *     delay    : number?
      * }}
      */
     var Toast;
@@ -51,125 +53,252 @@
          * Toast module to use
          * @type {string}
          */
-        var module = 'angular-material';
+        var usedToastModule = '';
+
+        /**
+         * Translate filter to use for toasts
+         * @type {string}
+         */
+        var usedTranslateFilter = '';
 
         ////////// API
 
         $get.$inject = [
-            '$injector'
+            '$injector',
+            '$q',
+            '$filter'
         ];
         /**
          * Angular provider $get implementation
          * @returns {function(Configuration):Promise}
          */
-        function $get($injector) {
-            switch (module) {
+        function $get($injector, $q, $filter) {
+            /**
+             * Dummy promise for missing do/undo handlers
+             * @type {Promise}
+             */
+            var dummyPromise = $q.when(null);
+
+            switch (usedToastModule) {
                 case 'angular-material' :
-                    return getToastServiceAngularMaterial($injector.get('$mdToast'));
+
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // Service : toastService
+
+                    return function (configuration) {
+                        var fullConfiguration = makeConfiguration(dummyPromise, configuration);
+
+                        /**
+                         * Angular material toast service
+                         */
+                        var $mdToast = $injector.get('$mdToast');
+
+                        /**
+                         * Angular filter to translate toasts
+                         * @type {function(string):string}
+                         */
+                        var translateFilter = $filter(usedTranslateFilter);
+
+                        /*
+                         * Toasts to show
+                         */
+                        var doThenToast    = createToast(fullConfiguration.doThen);
+                        var doCatchToast   = createToast(fullConfiguration.doCatch);
+                        var undoThenToast  = createToast(fullConfiguration.undoThen);
+                        var undoCatchToast = createToast(fullConfiguration.undoCatch);
+
+                        return {
+                            do   : angular.identity(executeDo),
+                            undo : angular.identity(executeUndo)
+                        };
+
+                        ////////// Private
+
+                        /**
+                         * Execute the configuration.do.handler method which return a Promise
+                         * @returns {Promise}
+                         */
+                        function executeDo() {
+                            return /** @type {Promise} */(configuration.do())
+                                .then(function () {
+                                    $mdToast.show(doThenToast)
+                                        .then(function (response) {
+                                            if (response === 'ok') {
+                                                executeUndo();
+                                            }
+                                        });
+                                })
+                                .catch(function () {
+                                    $mdToast.show(doCatchToast)
+                                        .then(function (response) {
+                                            if (response === 'ok') {
+                                                executeDo();
+                                            }
+                                        });
+                                });
+                        }
+
+                        /**
+                         * Execute the configuration.undo.handler method which cancel the configuration.do.handler
+                         * method
+                         */
+                        function executeUndo() {
+                            return /** @type {Promise} */(configuration.undo())
+                                .then(function () {
+                                    $mdToast.show(undoThenToast)
+                                        .then(function (response) {
+                                            if (response === 'ok') {
+                                                executeDo();
+                                            }
+                                        });
+                                })
+                                .catch(function () {
+                                    $mdToast.show(undoCatchToast)
+                                        .then(function (response) {
+                                            if (response === 'ok') {
+                                                executeUndo();
+                                            }
+                                        });
+                                });
+                        }
+
+                        /**
+                         * @param {Toast} toast
+                         */
+                        function createToast(toast) {
+                            var simpleToast = $mdToast.simple();
+                            if (toast.text) {
+                                var text = fullConfiguration.translate ? translateFilter(toast.text) : toast.text;
+                                simpleToast.textContent(text);
+                            }
+                            if (toast.action) {
+                                var action = fullConfiguration.translate ? translateFilter(toast.action) : toast.action;
+                                simpleToast.action(action);
+                            }
+                            if (toast.position) {
+                                simpleToast.position(toast.position);
+                            }
+                            if (toast.class) {
+                                simpleToast.theme(toast.class);
+                            }
+                            if (toast.delay) {
+                                simpleToast.hideDelay(toast.delay);
+                            }
+                            return simpleToast;
+                        }
+                    };
+
                 default :
-                    return function () {};
+                    return function () {
+                        return {
+                            do   : angular.identity(dummyPromise),
+                            undo : angular.identity(dummyPromise)
+                        };
+                    };
             }
         }
+
         toastCancelProvider.$get = $get;
 
         /**
          * Set the toast module to use
-         * @param {string} usedToastModule
+         * @param {string} toastModule
          */
-        toastCancelProvider.useToastModule = function (usedToastModule) {
-            module = usedToastModule;
+        toastCancelProvider.useToastModule = function (toastModule) {
+            usedToastModule = toastModule;
+        };
+
+        /**
+         * Set the translate filter to use
+         * @param {string} translateFilter
+         */
+        toastCancelProvider.useTranslateFilter = function (translateFilter) {
+            usedTranslateFilter = translateFilter;
         };
 
         return toastCancelProvider;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Service : toastService
+    // Private
 
     /**
-     * Service to be injected through dependency injection
-     * @param {$mdToast} $mdToast
+     * Set all the configuration options to their defaults
+     * @param {Promise} promise
+     * @param {Configuration} configuration
+     * @returns {*}
      */
-    function getToastServiceAngularMaterial($mdToast) {
-        /**
-         * @param {Configuration} config
-         */
-        return function (configuration) {
-            var doThenToast = new ToastAngularMaterial($mdToast, configuration.do.then);
-            var doCatchToast = new ToastAngularMaterial($mdToast, configuration.do.catch);
-            var undoThenToast = new ToastAngularMaterial($mdToast, configuration.undo.then);
-            var undoCatchToast = new ToastAngularMaterial($mdToast, configuration.undo.catch);
-
-            return executeDo();
-
-            ////////// Private
-
-            /**
-             * Execute the configuration.do.handler method which return a Promise
-             * @returns {Promise}
-             */
-            function executeDo() {
-                return /** @type {Promise} */(configuration.do.handler())
-                    .then(function () {
-                        console.log('show doThenToast', doThenToast);
-                        $mdToast.show(doThenToast)
-                            .then(function (response) {
-                                if (response === 'ok') {
-                                    executeUndo();
-                                }
-                            });
-                    })
-                    .catch(function () {
-                        console.log('show doCatchToast', doCatchToast);
-                        $mdToast.show(doCatchToast)
-                            .then(function (response) {
-                                if (response === 'ok') {
-                                    executeDo();
-                                }
-                            });
-                    });
+    function makeConfiguration(promise, configuration) {
+        var madeConfiguration = angular.extend({
+            do        : angular.identity(promise),
+            undo      : angular.identity(promise),
+            i18n      : '',
+            position  : '',
+            class     : '',
+            delay     : 0,
+            doThen    : {
+                text     : '',
+                action   : '',
+                position : '',
+                class    : '',
+                delay    : 0
+            },
+            doCatch   : {
+                text     : '',
+                action   : '',
+                position : '',
+                class    : '',
+                delay    : 0
+            },
+            undoThen  : {
+                text     : '',
+                action   : '',
+                position : '',
+                class    : '',
+                delay    : 0
+            },
+            undoCatch : {
+                text     : '',
+                action   : '',
+                position : '',
+                class    : '',
+                delay    : 0
             }
+        }, configuration);
 
-            /**
-             * Execute the configuration.undo.handler method which cancel the configuration.do.handler method
-             */
-            function executeUndo() {
-                return /** @type {Promise} */(configuration.undo.handler())
-                    .then(function () {
-                        $mdToast.show(undoThenToast)
-                            .then(function (response) {
-                                if (response === 'ok') {
-                                    executeDo();
-                                }
-                            });
-                    })
-                    .catch(function () {
-                        $mdToast.show(undoCatchToast)
-                            .then(function (response) {
-                                if (response === 'ok') {
-                                    executeUndo();
-                                }
-                            });
-                    });
-            }
-        };
-    }
+        if (madeConfiguration.i18n) {
+            madeConfiguration.doThen.text      = madeConfiguration.i18n + '.doThenText';
+            madeConfiguration.doCatch.text     = madeConfiguration.i18n + '.doCatchText';
+            madeConfiguration.undoThen.text    = madeConfiguration.i18n + '.undoThenText';
+            madeConfiguration.undoCatch.text   = madeConfiguration.i18n + '.undoCatchText';
+            madeConfiguration.doThen.action    = madeConfiguration.i18n + '.doThenAction';
+            madeConfiguration.doCatch.action   = madeConfiguration.i18n + '.doCatchAction';
+            madeConfiguration.undoThen.action  = madeConfiguration.i18n + '.undoThenAction';
+            madeConfiguration.undoCatch.action = madeConfiguration.i18n + '.undoCatchAction';
+        }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Toast : Angular Material
+        if (madeConfiguration.position) {
+            madeConfiguration.doThen.position    = madeConfiguration.position;
+            madeConfiguration.doCatch.position   = madeConfiguration.position;
+            madeConfiguration.undoThen.position  = madeConfiguration.position;
+            madeConfiguration.undoCatch.position = madeConfiguration.position;
+        }
 
-    /**
-     * @param {$mdToast} $mdToast
-     * @param {Toast} toast
-     * @constructor
-     */
-    function ToastAngularMaterial($mdToast, toast) {
-        var simple = $mdToast.simple();
-        simple.textContent(toast.text);
-        toast.action && simple.action(toast.action);
-        toast.position && simple.position(toast.position);
-        toast.theme && simple.theme(toast.theme);
-        return simple;
+        if (madeConfiguration.class) {
+            madeConfiguration.doThen.class    = madeConfiguration.class;
+            madeConfiguration.doCatch.class   = madeConfiguration.class;
+            madeConfiguration.undoThen.class  = madeConfiguration.class;
+            madeConfiguration.undoCatch.class = madeConfiguration.class;
+        }
+
+        if (madeConfiguration.delay > 0) {
+            madeConfiguration.doThen.delay    = madeConfiguration.delay;
+            madeConfiguration.doCatch.delay   = madeConfiguration.delay;
+            madeConfiguration.undoThen.delay  = madeConfiguration.delay;
+            madeConfiguration.undoCatch.delay = madeConfiguration.delay;
+        }
+
+        return madeConfiguration;
     }
 
 })();
