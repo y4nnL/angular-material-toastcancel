@@ -14,17 +14,17 @@
 
     /**
      * @typedef {{
-     *     do        : function():Promise,
-     *     undo      : function():Promise,
-     *     i18n      : string?,
-     *     position  : string?,
-     *     class     : string?,
-     *     delay     : number,
-     *     translate : boolean,
-     *     doThen    : Toast?,
-     *     doCatch   : Toast?,
-     *     undoThen  : Toast?,
-     *     undoCatch : Toast?
+     *     do        : function():Promise=,
+     *     undo      : function():Promise=,
+     *     i18n      : string=,
+     *     position  : string=,
+     *     class     : string=,
+     *     delay     : number=,
+     *     translate : boolean=,
+     *     doThen    : Toast=,
+     *     doCatch   : Toast=,
+     *     undoThen  : Toast=,
+     *     undoCatch : Toast=
      * }}
      */
     var Configuration;
@@ -34,11 +34,11 @@
 
     /**
      * @typedef {{
-     *     text     : string,
-     *     action   : string?,
-     *     position : string?,
-     *     class    : string?,
-     *     delay    : number?
+     *     text     : string=,
+     *     action   : string=,
+     *     position : string=,
+     *     class    : string=,
+     *     delay    : number=
      * }}
      */
     var Toast;
